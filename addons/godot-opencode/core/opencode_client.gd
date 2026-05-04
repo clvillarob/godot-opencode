@@ -14,7 +14,6 @@ var status: int = Status.DISCONNECTED:
 		status_changed.emit(value)
 
 var _thread: Thread
-var _pending_prompt: String = ""
 var _mutex: Mutex
 var _settings: Node
 
@@ -39,7 +38,6 @@ func send_prompt(prompt: String):
 		return
 
 	status = Status.BUSY
-	_pending_prompt = prompt
 
 	_thread = Thread.new()
 	_thread.start(_execute_opencode.bind(prompt))
@@ -52,6 +50,10 @@ func cancel():
 
 
 func _execute_opencode(prompt: String):
+	if not _settings:
+		call_deferred("set", "status", Status.DISCONNECTED)
+		return
+
 	var cmd_output: Array = []
 	var exit_code: int
 
@@ -59,16 +61,22 @@ func _execute_opencode(prompt: String):
 	var tmp_file = tmp_dir + "/prompt_" + str(Time.get_ticks_usec()) + ".txt"
 
 	var file = FileAccess.open(tmp_file, FileAccess.WRITE)
-	if file:
-		file.store_string(prompt)
-		file.close()
+	if not file:
+		call_deferred("emit_signal", "error_occurred", "No se pudo crear archivo temporal para el prompt")
+		call_deferred("set", "status", Status.CONNECTED)
+		return
+
+	file.store_string(prompt)
+	file.close()
 
 	var prompt_arg = "@" + tmp_file
 	exit_code = OS.execute("opencode", [prompt_arg], cmd_output, true)
 
+	DirAccess.remove_absolute(tmp_file)
+
 	if exit_code != 0:
 		call_deferred("emit_signal", "error_occurred", "Error ejecutando opencode. Código: " + str(exit_code))
-		call_deferred("emit_signal", "status_changed", Status.CONNECTED)
+		call_deferred("set", "status", Status.CONNECTED)
 		return
 
 	var response = ""
@@ -80,4 +88,4 @@ func _execute_opencode(prompt: String):
 		response = "(sin respuesta)"
 
 	call_deferred("emit_signal", "response_received", response)
-	call_deferred("emit_signal", "status_changed", Status.CONNECTED)
+	call_deferred("set", "status", Status.CONNECTED)
