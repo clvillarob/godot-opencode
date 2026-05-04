@@ -22,12 +22,14 @@ func _ready():
 
 
 func show_message(author: String, content: String):
-	var text = "[b]" + author + ":[/b]\n" + content
+	var safe_content = content.replace("[", "[lb]")
+	var text = "[b]" + author + ":[/b]\n" + safe_content
 	$VBoxContainer/ChatHistory.append_text(text + "\n\n")
 
 
 func show_error(message: String):
-	var text = "[color=red][b]Error:[/b] " + message + "[/color]"
+	var safe_message = message.replace("[", "[lb]")
+	var text = "[color=red][b]Error:[/b] " + safe_message + "[/color]"
 	$VBoxContainer/ChatHistory.append_text(text + "\n\n")
 
 

@@ -14,12 +14,7 @@ var status: int = Status.DISCONNECTED:
 		status_changed.emit(value)
 
 var _thread: Thread
-var _mutex: Mutex
 var _settings: Node
-
-
-func _ready():
-	_mutex = Mutex.new()
 
 
 func initialize(settings_node: Node):
@@ -37,6 +32,9 @@ func send_prompt(prompt: String):
 		error_occurred.emit("Opencode está ocupado. Espera a que termine.")
 		return
 
+	if _thread and _thread.is_started():
+		_thread.wait_to_finish()
+
 	status = Status.BUSY
 
 	_thread = Thread.new()
@@ -46,6 +44,7 @@ func send_prompt(prompt: String):
 func cancel():
 	if _thread and _thread.is_started():
 		_thread.wait_to_finish()
+	_thread = null
 	status = Status.CONNECTED
 
 
@@ -69,8 +68,9 @@ func _execute_opencode(prompt: String):
 	file.store_string(prompt)
 	file.close()
 
+	var binary = _settings.get_opencode_path()
 	var prompt_arg = "@" + tmp_file
-	exit_code = OS.execute("opencode", [prompt_arg], cmd_output, true)
+	exit_code = OS.execute(binary, [prompt_arg], cmd_output, true)
 
 	DirAccess.remove_absolute(tmp_file)
 

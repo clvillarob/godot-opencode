@@ -16,11 +16,9 @@ func apply_response(response: String) -> bool:
 		var lang = block.language.to_lower()
 		var code = block.code
 
-		if lang == "gdscript":
-			if _apply_gdscript(code, block.path):
+		if lang in ["gdscript", "cs", "json", "xml", "yaml", "txt"]:
+			if _apply_file(code, block.path, lang):
 				applied_count += 1
-		elif lang == "text":
-			pass
 
 	return applied_count > 0
 
@@ -41,15 +39,15 @@ func _extract_code_blocks(text: String) -> Array:
 	return blocks
 
 
-func _apply_gdscript(code: String, path: String) -> bool:
+func _apply_file(code: String, path: String, language: String) -> bool:
 	if path.is_empty():
 		var ctx = project_context
 		if ctx:
 			path = ctx.get_current_script_path()
-		if path.is_empty():
-			path = _ask_save_path()
-			if path.is_empty():
-				return false
+
+	if path.is_empty():
+		var ext = _extension_for_language(language)
+		path = "res://generated_" + str(Time.get_ticks_usec()) + ext
 
 	var file = FileAccess.open(path, FileAccess.WRITE)
 	if not file:
@@ -61,5 +59,12 @@ func _apply_gdscript(code: String, path: String) -> bool:
 	return true
 
 
-func _ask_save_path() -> String:
-	return "res://generated_script.gd"
+func _extension_for_language(language: String) -> String:
+	match language:
+		"gdscript": return ".gd"
+		"cs": return ".cs"
+		"json": return ".json"
+		"xml": return ".xml"
+		"yaml": return ".yaml"
+		"txt": return ".txt"
+		_: return ".txt"

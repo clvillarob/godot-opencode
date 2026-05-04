@@ -59,6 +59,9 @@ func _wire_connections():
 	opencode_client.response_received.connect(_on_client_response)
 	opencode_client.error_occurred.connect(_on_client_error)
 
+	terminal_dock.send_command.connect(_on_terminal_command)
+	terminal_dock.stop_requested.connect(_on_stop_opencode)
+
 
 func _add_docks():
 	add_control_to_dock(DOCK_SLOT_LEFT_UL, chat_dock)
@@ -73,12 +76,13 @@ func _remove_docks():
 
 
 func _cleanup_core():
+	if opencode_client:
+		opencode_client.cancel()
+		opencode_client.queue_free()
 	if editor_bridge:
 		editor_bridge.queue_free()
 	if project_context:
 		project_context.queue_free()
-	if opencode_client:
-		opencode_client.queue_free()
 
 
 func _cleanup_settings():
@@ -131,3 +135,7 @@ func _on_client_response(response: String):
 func _on_client_error(message: String):
 	chat_dock.show_error(message)
 	terminal_dock.append_output("[ERROR] " + message)
+
+
+func _on_terminal_command(text: String):
+	_on_chat_send_prompt(text)
