@@ -62,6 +62,8 @@ func _wire_connections():
 	terminal_dock.send_command.connect(_on_terminal_command)
 	terminal_dock.stop_requested.connect(_on_stop_opencode)
 
+	editor_bridge.files_changed.connect(_on_files_changed)
+
 
 func _add_docks():
 	add_control_to_dock(DOCK_SLOT_LEFT_UL, chat_dock)
@@ -90,11 +92,47 @@ func _cleanup_settings():
 		settings_node.queue_free()
 
 
+func _gather_context():
+	var ctx = project_context
+	ctx.current_script_path = ""
+	ctx.current_script_content = ""
+	ctx.current_script_language = ""
+	ctx.selected_node_paths = []
+	ctx.current_scene_path = ""
+
+	var script_editor = EditorInterface.get_script_editor()
+	if script_editor:
+		var current = script_editor.get_current_script()
+		if current:
+			ctx.current_script_path = current.resource_path
+			var file = FileAccess.open(current.resource_path, FileAccess.READ)
+			if file:
+				ctx.current_script_content = file.get_as_text()
+				file.close()
+			if current.resource_path.ends_with(".gd"):
+				ctx.current_script_language = "GDScript"
+			elif current.resource_path.ends_with(".cs"):
+				ctx.current_script_language = "C#"
+
+	var selection = EditorInterface.get_selection()
+	if selection:
+		var nodes = selection.get_selected_nodes()
+		var paths: Array = []
+		for node in nodes:
+			paths.append(node.get_path())
+		ctx.selected_node_paths = paths
+
+	var scene = EditorInterface.get_current_scene()
+	if scene:
+		ctx.current_scene_path = scene.scene_file_path
+
+
 func _on_chat_send_prompt(prompt: String):
 	if not opencode_client.is_opencode_installed():
 		chat_dock.show_error("Opencode no está instalado. Instálalo desde https://opencode.ai")
 		return
 
+	_gather_context()
 	var context = project_context.context_to_prompt()
 	var full_prompt = prompt
 	if not context.is_empty():
@@ -139,3 +177,7 @@ func _on_client_error(message: String):
 
 func _on_terminal_command(text: String):
 	_on_chat_send_prompt(text)
+
+
+func _on_files_changed():
+	EditorInterface.get_resource_filesystem().scan()

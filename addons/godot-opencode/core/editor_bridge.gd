@@ -5,6 +5,8 @@ extends Node
 var opencode_client: Node
 var project_context: Node
 
+signal files_changed()
+
 
 func apply_response(response: String) -> bool:
 	var blocks = _extract_code_blocks(response)
@@ -19,6 +21,9 @@ func apply_response(response: String) -> bool:
 		if lang in ["gdscript", "cs", "json", "xml", "yaml", "txt"]:
 			if _apply_file(code, block.path, lang):
 				applied_count += 1
+
+	if applied_count > 0:
+		files_changed.emit()
 
 	return applied_count > 0
 
@@ -43,7 +48,7 @@ func _apply_file(code: String, path: String, language: String) -> bool:
 	if path.is_empty():
 		var ctx = project_context
 		if ctx:
-			path = ctx.get_current_script_path()
+			path = ctx.current_script_path
 
 	if path.is_empty():
 		var ext = _extension_for_language(language)
@@ -54,8 +59,6 @@ func _apply_file(code: String, path: String, language: String) -> bool:
 		return false
 	file.store_string(code)
 	file.close()
-
-	EditorInterface.get_resource_filesystem().scan()
 	return true
 
 
