@@ -58,4 +58,6 @@ func _on_file_activated():
 	var path = selected.get_metadata(0)
 	if typeof(path) != TYPE_STRING or path.ends_with("/"):
 		return
-	EditorInterface.edit_resource(load(path))
+	var ei = Engine.get_singleton("EditorInterface")
+	if ei:
+		ei.edit_resource(load(path))

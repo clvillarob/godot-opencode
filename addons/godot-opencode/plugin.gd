@@ -100,7 +100,11 @@ func _gather_context():
 	ctx.selected_node_paths = []
 	ctx.current_scene_path = ""
 
-	var script_editor = EditorInterface.get_script_editor()
+	var ei = get_editor_interface()
+	if not ei:
+		return
+
+	var script_editor = ei.get_script_editor()
 	if script_editor:
 		var current = script_editor.get_current_script()
 		if current:
@@ -114,7 +118,7 @@ func _gather_context():
 			elif current.resource_path.ends_with(".cs"):
 				ctx.current_script_language = "C#"
 
-	var selection = EditorInterface.get_selection()
+	var selection = ei.get_selection()
 	if selection:
 		var nodes = selection.get_selected_nodes()
 		var paths: Array = []
@@ -122,7 +126,7 @@ func _gather_context():
 			paths.append(node.get_path())
 		ctx.selected_node_paths = paths
 
-	var scene = EditorInterface.get_current_scene()
+	var scene = ei.get_current_scene()
 	if scene:
 		ctx.current_scene_path = scene.scene_file_path
 
@@ -180,4 +184,6 @@ func _on_terminal_command(text: String):
 
 
 func _on_files_changed():
-	EditorInterface.get_resource_filesystem().scan()
+	var ei = get_editor_interface()
+	if ei:
+		ei.get_resource_filesystem().scan()
