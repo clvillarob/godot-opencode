@@ -126,7 +126,7 @@ func _gather_context():
 			paths.append(node.get_path())
 		ctx.selected_node_paths = paths
 
-	var scene = ei.get_current_scene()
+	var scene = ei.get_edited_scene_root()
 	if scene:
 		ctx.current_scene_path = scene.scene_file_path
 
