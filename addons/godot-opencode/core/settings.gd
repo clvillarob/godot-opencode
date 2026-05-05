@@ -13,10 +13,15 @@ func _resolve_opencode_path():
 	var exit_code: int
 	if OS.get_name() == "Windows":
 		exit_code = OS.execute("where", ["opencode"], output, true)
+		if exit_code == 0 and output.size() > 0:
+			_opencode_path = output[0].strip_edges()
+			if not _opencode_path.ends_with(".cmd") and not _opencode_path.ends_with(".exe"):
+				if FileAccess.file_exists(_opencode_path + ".cmd"):
+					_opencode_path += ".cmd"
 	else:
 		exit_code = OS.execute("which", ["opencode"], output, true)
-	if exit_code == 0 and output.size() > 0:
-		_opencode_path = output[0].strip_edges()
+		if exit_code == 0 and output.size() > 0:
+			_opencode_path = output[0].strip_edges()
 
 
 func get_opencode_path() -> String:
@@ -35,7 +40,11 @@ func get_opencode_version() -> String:
 	if _opencode_path.is_empty():
 		return ""
 	var output: Array = []
-	var exit_code: int = OS.execute(_opencode_path, ["--version"], output, true)
+	var exit_code: int
+	if OS.get_name() == "Windows":
+		exit_code = OS.execute("cmd.exe", ["/c", _opencode_path, "--version"], output, true)
+	else:
+		exit_code = OS.execute(_opencode_path, ["--version"], output, true)
 	if exit_code == 0 and output.size() > 0:
 		return output[0].strip_edges()
 	return ""

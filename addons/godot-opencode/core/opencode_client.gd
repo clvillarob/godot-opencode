@@ -70,7 +70,10 @@ func _execute_opencode(prompt: String):
 
 	var binary = _settings.get_opencode_path()
 	var prompt_arg = "@" + tmp_file
-	exit_code = OS.execute(binary, [prompt_arg], cmd_output, true)
+	if OS.get_name() == "Windows":
+		exit_code = OS.execute("cmd.exe", ["/c", binary, prompt_arg], cmd_output, true)
+	else:
+		exit_code = OS.execute(binary, [prompt_arg], cmd_output, true)
 
 	DirAccess.remove_absolute(tmp_file)
 
